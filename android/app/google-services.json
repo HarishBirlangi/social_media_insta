@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1028248663653",
+    "project_id": "social-media-insta-d7006",
+    "storage_bucket": "social-media-insta-d7006.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1028248663653:android:4c04e8b253e9c7cfdeb88c",
+        "android_client_info": {
+          "package_name": "com.example.social_media_insta"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1028248663653-tglo9n5tjaci99d58tmua59bvqlul9hv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.social_media_insta",
+            "certificate_hash": "d2de2f4a428221625ae10c621cc50a1040cdaf7c"
+          }
+        },
+        {
+          "client_id": "1028248663653-82frr3qu6uu2edt0orrj68j4c7q2toh5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASxFzI9Vzzr8Znv0x132BT3q5AiEZlBQs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1028248663653-82frr3qu6uu2edt0orrj68j4c7q2toh5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
