@@ -1,5 +1,15 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:social_media_insta/pages/create_account_page.dart';
+import 'package:social_media_insta/pages/notification_page.dart';
+import 'package:social_media_insta/pages/profile_page.dart';
+import 'package:social_media_insta/pages/search_page.dart';
+import 'package:social_media_insta/pages/timeline_page.dart';
+import 'package:social_media_insta/pages/upload_page.dart';
+
+import '../models/user.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -11,10 +21,18 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool _isUserLogin = false;
   GoogleSignIn googleSignIn = GoogleSignIn();
+  late PageController pageController;
+  int getPageIndex = 0;
+  CollectionReference<Map<String, dynamic>> userReference =
+      FirebaseFirestore.instance.collection("users");
+
+  DateTime timeStamp = DateTime.now();
+  late User currentUser;
 
   @override
   void initState() {
     super.initState();
+    pageController = PageController();
     googleSignIn.onCurrentUserChanged.listen((googleSignInAccount) {
       print(googleSignInAccount.toString());
       controlSignIn(googleSignInAccount);
@@ -41,12 +59,54 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  saveUserInfoToFirestore() async {
+    final GoogleSignInAccount? googleCurrentUser = googleSignIn.currentUser;
+    DocumentSnapshot documentSnapshot =
+        await userReference.doc(googleCurrentUser?.id).get();
+
+    if (!documentSnapshot.exists) {
+      if (!mounted) return;
+      final username = await Navigator.push(context,
+          MaterialPageRoute(builder: (context) => const CreateAccountPage()));
+
+      userReference.doc(googleCurrentUser?.id).set({
+        "id": googleCurrentUser?.id,
+        "profileName": googleCurrentUser?.displayName,
+        "userName": username,
+        "url": googleCurrentUser?.photoUrl,
+        "email": googleCurrentUser?.email,
+        "bio": "",
+        "timestamp": timeStamp,
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
+  }
+
   loginUser() {
     googleSignIn.signIn();
   }
 
   logoutUser() {
     googleSignIn.signOut();
+  }
+
+  void whenPageChanges(int pageIndex) {
+    setState(() {
+      getPageIndex = pageIndex;
+    });
+  }
+
+  onTapChanges(int pageIndex) {
+    pageController.animateToPage(
+      pageIndex,
+      duration: const Duration(milliseconds: 100),
+      curve: Curves.bounceInOut,
+    );
   }
 
   @override
@@ -58,13 +118,33 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Widget buildHomeScreen() {
-    return Center(
-      child: ElevatedButton(
-        onPressed: () {
-          logoutUser();
-        },
-        child: const Text("Logout"),
+  Scaffold buildHomeScreen() {
+    return Scaffold(
+      body: PageView(
+        controller: pageController,
+        onPageChanged: whenPageChanges,
+        physics: const NeverScrollableScrollPhysics(),
+        children: const [
+          TimeLinePage(),
+          SearchPage(),
+          UploadPage(),
+          NotificationPage(),
+          ProfilePage(),
+        ],
+      ),
+      bottomNavigationBar: CupertinoTabBar(
+        currentIndex: getPageIndex,
+        onTap: onTapChanges,
+        activeColor: Colors.white,
+        inactiveColor: Colors.blueGrey,
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home)),
+          BottomNavigationBarItem(icon: Icon(Icons.search)),
+          BottomNavigationBarItem(icon: Icon(Icons.photo_camera)),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite)),
+          BottomNavigationBarItem(icon: Icon(Icons.person)),
+        ],
       ),
     );
   }
