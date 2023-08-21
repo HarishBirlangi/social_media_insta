@@ -22,7 +22,7 @@
           }
         },
         {
-          "client_id": "1028248663653-82frr3qu6uu2edt0orrj68j4c7q2toh5.apps.googleusercontent.com",
+          "client_id": "1028248663653-rkapauqoiv1fltgaot3ufm31uel564tv.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -37,6 +37,13 @@
             {
               "client_id": "1028248663653-82frr3qu6uu2edt0orrj68j4c7q2toh5.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "1028248663653-t11968vkv9ekjs13dklabf0kctlce80n.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.socialMediaInsta"
+              }
             }
           ]
         }
