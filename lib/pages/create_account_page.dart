@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:social_media_insta/widgets/header_widget.dart';
 
@@ -19,9 +17,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     final form = _formKey.currentState;
     if (form!.validate()) {
       form.save();
-      Timer(const Duration(seconds: 4), () {
-        Navigator.pop(context, userName);
-      });
+      // Timer(const Duration(seconds: 4), () {
+      Navigator.pop(context, userName);
+      // });
     }
   }
 

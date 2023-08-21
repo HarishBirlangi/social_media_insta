@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -6,10 +7,12 @@ import 'package:social_media_insta/pages/create_account_page.dart';
 import 'package:social_media_insta/pages/notification_page.dart';
 import 'package:social_media_insta/pages/profile_page.dart';
 import 'package:social_media_insta/pages/search_page.dart';
-import 'package:social_media_insta/pages/timeline_page.dart';
 import 'package:social_media_insta/pages/upload_page.dart';
 
 import '../models/user.dart';
+
+CollectionReference<Map<String, dynamic>> userReference =
+    FirebaseFirestore.instance.collection("users");
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -19,36 +22,44 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  FirebaseAuth firebaseAuth = FirebaseAuth.instance;
   bool _isUserLogin = false;
   GoogleSignIn googleSignIn = GoogleSignIn();
   late PageController pageController;
   int getPageIndex = 0;
-  CollectionReference<Map<String, dynamic>> userReference =
-      FirebaseFirestore.instance.collection("users");
 
   DateTime timeStamp = DateTime.now();
-  late User currentUser;
+  late UserDetails currentUser;
 
   @override
   void initState() {
     super.initState();
     pageController = PageController();
-    googleSignIn.onCurrentUserChanged.listen((googleSignInAccount) {
-      print(googleSignInAccount.toString());
+    googleSignIn.onCurrentUserChanged.listen(
+        (GoogleSignInAccount? googleSignInAccount) {
+      bool isAuthorised = googleSignInAccount != null;
+      print('isAutherized $isAuthorised');
       controlSignIn(googleSignInAccount);
     }, onError: (gError) {
       print("Error message $gError");
     });
 
-    googleSignIn.signInSilently(suppressErrors: false).then((gSignInAccount) {
-      controlSignIn(gSignInAccount!);
+    silentSignIn();
+  }
+
+  Future silentSignIn() async {
+    await googleSignIn
+        .signInSilently(suppressErrors: false)
+        .then((gSignInAccount) {
+      controlSignIn(gSignInAccount);
     }).catchError((eError) {
       print("Error $eError");
     });
   }
 
-  controlSignIn(GoogleSignInAccount? googleSignInAccount) async {
-    if (googleSignInAccount != null) {
+  controlSignIn(GoogleSignInAccount? signInAccount) async {
+    if (signInAccount != null) {
+      await saveUserInfoToFirestore();
       setState(() {
         _isUserLogin = true;
       });
@@ -59,17 +70,16 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  saveUserInfoToFirestore() async {
+  Future saveUserInfoToFirestore() async {
     final GoogleSignInAccount? googleCurrentUser = googleSignIn.currentUser;
     DocumentSnapshot documentSnapshot =
         await userReference.doc(googleCurrentUser?.id).get();
-
     if (!documentSnapshot.exists) {
-      if (!mounted) return;
+      // if (!mounted) return;
       final username = await Navigator.push(context,
           MaterialPageRoute(builder: (context) => const CreateAccountPage()));
 
-      userReference.doc(googleCurrentUser?.id).set({
+      await userReference.doc(googleCurrentUser?.id).set({
         "id": googleCurrentUser?.id,
         "profileName": googleCurrentUser?.displayName,
         "userName": username,
@@ -78,7 +88,9 @@ class _HomePageState extends State<HomePage> {
         "bio": "",
         "timestamp": timeStamp,
       });
+      documentSnapshot = await userReference.doc(googleCurrentUser?.id).get();
     }
+    currentUser = UserDetails.fromDocument(documentSnapshot);
   }
 
   @override
@@ -118,18 +130,31 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Widget buttonWidget() {
+    return Center(
+        child: Container(
+            padding: const EdgeInsets.all(8),
+            width: 300,
+            child: ElevatedButton(
+                onPressed: () {
+                  logoutUser();
+                },
+                child: const Text('Logout'))));
+  }
+
   Scaffold buildHomeScreen() {
     return Scaffold(
       body: PageView(
         controller: pageController,
         onPageChanged: whenPageChanges,
         physics: const NeverScrollableScrollPhysics(),
-        children: const [
-          TimeLinePage(),
-          SearchPage(),
-          UploadPage(),
-          NotificationPage(),
-          ProfilePage(),
+        children: [
+          buttonWidget(),
+          // TimeLinePage(),
+          const SearchPage(),
+          const UploadPage(),
+          const NotificationPage(),
+          const ProfilePage(),
         ],
       ),
       bottomNavigationBar: CupertinoTabBar(
