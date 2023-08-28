@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -13,6 +14,10 @@ import '../models/user.dart';
 
 CollectionReference<Map<String, dynamic>> userReference =
     FirebaseFirestore.instance.collection("users");
+Reference postPicturesStorageReference =
+    FirebaseStorage.instance.ref().child("Posts Pictures");
+CollectionReference postDataReference =
+    FirebaseFirestore.instance.collection('posts');
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -75,7 +80,7 @@ class _HomePageState extends State<HomePage> {
     DocumentSnapshot documentSnapshot =
         await userReference.doc(googleCurrentUser?.id).get();
     if (!documentSnapshot.exists) {
-      // if (!mounted) return;
+      if (!mounted) return;
       final username = await Navigator.push(context,
           MaterialPageRoute(builder: (context) => const CreateAccountPage()));
 
@@ -152,7 +157,7 @@ class _HomePageState extends State<HomePage> {
           buttonWidget(),
           // TimeLinePage(),
           const SearchPage(),
-          const UploadPage(),
+          UploadPage(gCurrentUser: currentUser),
           const NotificationPage(),
           const ProfilePage(),
         ],

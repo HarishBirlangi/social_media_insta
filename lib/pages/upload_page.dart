@@ -1,9 +1,16 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image/image.dart' as imd;
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:social_media_insta/models/user.dart';
+import 'package:social_media_insta/pages/home_page.dart';
+import 'package:uuid/uuid.dart';
 
 class UploadPage extends StatefulWidget {
   final UserDetails gCurrentUser;
@@ -13,11 +20,14 @@ class UploadPage extends StatefulWidget {
   State<UploadPage> createState() => _UploadPageState();
 }
 
-class _UploadPageState extends State<UploadPage> {
-  late XFile _file;
+class _UploadPageState extends State<UploadPage>
+    with AutomaticKeepAliveClientMixin<UploadPage> {
+  XFile? _file;
   TextEditingController descriptionTextEditingController =
       TextEditingController();
   TextEditingController locationTextEditingController = TextEditingController();
+  bool uploading = false;
+  String postId = const Uuid().v4();
   @override
   Widget build(BuildContext context) {
     return _file == null ? displayUploadScreen() : displayUploadFormScreen();
@@ -120,9 +130,12 @@ class _UploadPageState extends State<UploadPage> {
           style: TextStyle(
               color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.black,
         leading: IconButton(
-          onPressed: () {},
+          onPressed: () {
+            clearPostInfo();
+            // Navigator.of(context).pop();
+          },
           icon: const Icon(
             Icons.arrow_back,
             color: Colors.white,
@@ -130,7 +143,11 @@ class _UploadPageState extends State<UploadPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () {},
+            onPressed: uploading
+                ? null
+                : () {
+                    controlUploadAndSave();
+                  },
             child: const Text(
               'Share',
               style: TextStyle(
@@ -144,6 +161,7 @@ class _UploadPageState extends State<UploadPage> {
       ),
       body: ListView(
         children: [
+          uploading ? const LinearProgressIndicator() : const Text(''),
           Container(
             height: 230,
             width: MediaQuery.of(context).size.width * 0.8,
@@ -153,7 +171,7 @@ class _UploadPageState extends State<UploadPage> {
                 child: Container(
                   decoration: BoxDecoration(
                     image: DecorationImage(
-                        image: FileImage(File(_file.path)), fit: BoxFit.cover),
+                        image: FileImage(File(_file!.path)), fit: BoxFit.cover),
                   ),
                 ),
               ),
@@ -196,11 +214,134 @@ class _UploadPageState extends State<UploadPage> {
             width: 220,
             height: 110,
             alignment: Alignment.center,
-            // child:
-            // ElevatedButton.icon(onPressed: () {}, icon: icon, label: label),
+            child: ElevatedButton.icon(
+              onPressed: getUserCurrentLocation,
+              icon: const Icon(
+                Icons.location_on,
+                color: Colors.white,
+              ),
+              label: const Text(
+                "Get my current location",
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            ),
           )
         ],
       ),
     );
+  }
+
+  Future<void> getLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return Future.error('Location services are disabled.');
+    }
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return Future.error('Location permissions are denied');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return Future.error(
+          'Location permissions are permanently denied, we cannot request permissions.');
+    }
+  }
+
+  Future<void> getUserCurrentLocation() async {
+    await getLocationPermission();
+    Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high);
+    List<Placemark> placeMarks = await GeocodingPlatform.instance
+        .placemarkFromCoordinates(position.latitude, position.longitude);
+    Placemark mPlaceMark = placeMarks[0];
+    String completeAddress =
+        '${mPlaceMark.subThoroughfare} ${mPlaceMark.thoroughfare} ${mPlaceMark.subLocality} ${mPlaceMark.locality} ${mPlaceMark.subAdministrativeArea} ${mPlaceMark.administrativeArea} ${mPlaceMark.postalCode} ${mPlaceMark.country}';
+    String specificAddress = '${mPlaceMark.locality}, ${mPlaceMark.country}';
+    locationTextEditingController.text = specificAddress;
+  }
+
+  compressPhoto() async {
+    final tempDirectory = await getTemporaryDirectory();
+    final path = tempDirectory.path;
+    print('compress photo 1');
+    imd.Image? mImageFile = imd.decodeImage(await _file!.readAsBytes());
+    print('compress photo 2');
+    File compressedImageFile = File('$path/img_$postId.jpg')
+      ..writeAsBytesSync(imd.encodeJpg(mImageFile!, quality: 90));
+
+    print('compress photo 3');
+
+    setState(() {
+      _file = XFile(compressedImageFile.path);
+    });
+  }
+
+  void controlUploadAndSave() async {
+    setState(() {
+      uploading = true;
+    });
+
+    await compressPhoto();
+
+    String downloadUrl = await uploadPhoto(_file);
+    savePostsInfoToFireStore(
+      url: downloadUrl,
+      location: locationTextEditingController.text,
+      description: descriptionTextEditingController.text,
+    );
+    locationTextEditingController.clear();
+    descriptionTextEditingController.clear();
+    setState(() {
+      _file = null;
+      uploading = false;
+      postId = const Uuid().v4();
+    });
+  }
+
+  Future<String> uploadPhoto(mImageFile) async {
+    UploadTask mStorageUploadTask = postPicturesStorageReference
+        .child('post_$postId.jgp')
+        .putFile(File(mImageFile.path));
+    TaskSnapshot storageTaskSnapshot =
+        await mStorageUploadTask.whenComplete(() => null);
+    String downloadUrl = await storageTaskSnapshot.ref.getDownloadURL();
+    return downloadUrl;
+  }
+
+  clearPostInfo() {
+    descriptionTextEditingController.clear();
+    locationTextEditingController.clear();
+    setState(() {
+      _file = null;
+    });
+  }
+
+  @override
+  bool get wantKeepAlive => true;
+
+  void savePostsInfoToFireStore(
+      {required String url,
+      required String location,
+      required String description}) {
+    postDataReference
+        .doc(widget.gCurrentUser.id)
+        .collection('usersPosts')
+        .doc(postId)
+        .set({
+      "postId": postId,
+      "ownerId": widget.gCurrentUser.id,
+      "timestamp": DateTime.timestamp(),
+      "likes": {},
+      "userName": widget.gCurrentUser.userName,
+      "description": description,
+      "location": location,
+      "url": url,
+    });
   }
 }
