@@ -269,14 +269,9 @@ class _UploadPageState extends State<UploadPage>
   compressPhoto() async {
     final tempDirectory = await getTemporaryDirectory();
     final path = tempDirectory.path;
-    print('compress photo 1');
     imd.Image? mImageFile = imd.decodeImage(await _file!.readAsBytes());
-    print('compress photo 2');
     File compressedImageFile = File('$path/img_$postId.jpg')
       ..writeAsBytesSync(imd.encodeJpg(mImageFile!, quality: 90));
-
-    print('compress photo 3');
-
     setState(() {
       _file = XFile(compressedImageFile.path);
     });

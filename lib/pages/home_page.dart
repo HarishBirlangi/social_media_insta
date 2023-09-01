@@ -18,6 +18,7 @@ Reference postPicturesStorageReference =
     FirebaseStorage.instance.ref().child("Posts Pictures");
 CollectionReference postDataReference =
     FirebaseFirestore.instance.collection('posts');
+late UserDetails currentUser;
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -32,9 +33,7 @@ class _HomePageState extends State<HomePage> {
   GoogleSignIn googleSignIn = GoogleSignIn();
   late PageController pageController;
   int getPageIndex = 0;
-
   DateTime timeStamp = DateTime.now();
-  late UserDetails currentUser;
 
   @override
   void initState() {
@@ -159,7 +158,7 @@ class _HomePageState extends State<HomePage> {
           const SearchPage(),
           UploadPage(gCurrentUser: currentUser),
           const NotificationPage(),
-          const ProfilePage(),
+          ProfilePage(userId: currentUser.id),
         ],
       ),
       bottomNavigationBar: CupertinoTabBar(
