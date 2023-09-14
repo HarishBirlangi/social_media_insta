@@ -8,6 +8,7 @@ import 'package:social_media_insta/pages/create_account_page.dart';
 import 'package:social_media_insta/pages/notification_page.dart';
 import 'package:social_media_insta/pages/profile_page.dart';
 import 'package:social_media_insta/pages/search_page.dart';
+import 'package:social_media_insta/pages/timeline_page.dart';
 import 'package:social_media_insta/pages/upload_page.dart';
 
 import '../models/user.dart';
@@ -134,18 +135,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Widget buttonWidget() {
-    return Center(
-        child: Container(
-            padding: const EdgeInsets.all(8),
-            width: 300,
-            child: ElevatedButton(
-                onPressed: () {
-                  logoutUser();
-                },
-                child: const Text('Logout'))));
-  }
-
   Scaffold buildHomeScreen() {
     return Scaffold(
       body: PageView(
@@ -153,8 +142,7 @@ class _HomePageState extends State<HomePage> {
         onPageChanged: whenPageChanges,
         physics: const NeverScrollableScrollPhysics(),
         children: [
-          buttonWidget(),
-          // TimeLinePage(),
+          const TimeLinePage(),
           const SearchPage(),
           UploadPage(gCurrentUser: currentUser),
           const NotificationPage(),
@@ -211,15 +199,25 @@ class _HomePageState extends State<HomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Image(
-                    height: 40,
-                    width: 40,
-                    image: AssetImage('assets/images/google_icon_image.png'),
-                    fit: BoxFit.cover,
+                  const ClipRRect(
+                    borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(10),
+                        bottomLeft: Radius.circular(10)),
+                    child: Image(
+                      height: 40,
+                      width: 40,
+                      image: AssetImage('assets/images/google_icon_image.png'),
+                      fit: BoxFit.cover,
+                    ),
                   ),
                   Container(
+                    decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.only(
+                            topRight: Radius.circular(10),
+                            bottomRight: Radius.circular(10))),
                     alignment: Alignment.center,
-                    color: Colors.black54,
+                    // color: Colors.black54,
                     height: 40,
                     width: 200,
                     child: const Text(

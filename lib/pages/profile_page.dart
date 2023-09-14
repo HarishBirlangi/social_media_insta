@@ -20,7 +20,10 @@ class _ProfilePageState extends State<ProfilePage> {
       future: userReference.doc(widget.userId).get(),
       builder: (context, dataSnapshot) {
         if (!dataSnapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const Padding(
+            padding: EdgeInsets.only(top: 32),
+            child: Center(child: CircularProgressIndicator()),
+          );
         }
         UserDetails userInfo = UserDetails.fromDocument(dataSnapshot.data!);
         return Padding(
