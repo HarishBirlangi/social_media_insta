@@ -271,7 +271,7 @@ class _UploadPageState extends State<UploadPage>
     final path = tempDirectory.path;
     imd.Image? mImageFile = imd.decodeImage(await _file!.readAsBytes());
     File compressedImageFile = File('$path/img_$postId.jpg')
-      ..writeAsBytesSync(imd.encodeJpg(mImageFile!, quality: 90));
+      ..writeAsBytesSync(imd.encodeJpg(mImageFile!, quality: 60));
     setState(() {
       _file = XFile(compressedImageFile.path);
     });
